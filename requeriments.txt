@@ -1,0 +1,5 @@
+SpeechRecognition
+pyaudio
+wave
+deepl
+gTTS
