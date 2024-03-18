@@ -1,37 +1,51 @@
+import threading
 import pyaudio
 import wave
+from PyQt5.QtCore import QThread, pyqtSignal
 
-def record(WAVE_OUTPUT_FILENAME = "output.wav", RECORD_SECONDS = 10):
-    FORMAT = pyaudio.paInt16 # формат аудио
-    CHANNELS = 2 # стерео запись
-    RATE = 44100 # частота дискретизации
-    CHUNK = 1024 # буфер записи
-    p = pyaudio.PyAudio()
+class Recorder(QThread):
+    finished = pyqtSignal(str)
+    
+    def __init__(self, output_filename="output.wav"):
+        super().__init__()
+        self.output_filename = output_filename
+        self.is_recording = False
 
-    # Начало записи
-    stream = p.open(format=FORMAT, channels=CHANNELS,
-                    rate=RATE, input=True,
-                    frames_per_buffer=CHUNK)
-    print("Recording...")
+    def stop(self):
+        self.is_recording = False
+        self.finished.emit(self.output_filename)
+  #
+    def run(self):
+        FORMAT = pyaudio.paInt16
+        CHANNELS = 2
+        RATE = 44100
+        CHUNK = 1024
+        frames = []
+        p = pyaudio.PyAudio()
+        stream = p.open(format=FORMAT, channels=CHANNELS,
+                        rate=RATE, input=True,
+                        frames_per_buffer=CHUNK)
+        print("Recording...")
+        
+        self.is_recording = True
+        while self.is_recording:
+            data = stream.read(CHUNK)
+            frames.append(data)
+        
+        print("Finished recording.")
+        
+        stream.stop_stream()
+        stream.close()
+        p.terminate()
+        
+        wf = wave.open(self.output_filename, 'wb')
+        wf.setnchannels(CHANNELS)
+        wf.setsampwidth(p.get_sample_size(FORMAT))
+        wf.setframerate(RATE)
+        wf.writeframes(b''.join(frames))
+        wf.close()
 
-    frames = []
-
-    for i in range(0, int(RATE / CHUNK * RECORD_SECONDS)):
-        data = stream.read(CHUNK)
-        frames.append(data)
-
-    print("Finished recording.")
-
-    # Остановка записи
-    stream.stop_stream()
-    stream.close()
-    p.terminate()
-
-    # Сохранение файла
-    wf = wave.open(WAVE_OUTPUT_FILENAME, 'wb')
-    wf.setnchannels(CHANNELS)
-    wf.setsampwidth(p.get_sample_size(FORMAT))
-    wf.setframerate(RATE)
-    wf.writeframes(b''.join(frames))
-    wf.close()
-
+        self.finished.emit(self.output_filename)
+        
+    def stop(self):
+        self.is_recording = False
