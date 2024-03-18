@@ -3,3 +3,4 @@ pyaudio
 wave
 deepl
 gTTS
+PyQt5

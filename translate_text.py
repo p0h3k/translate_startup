@@ -16,6 +16,4 @@ def translate(text_to_translate, target_lang="EN-US"):
         print("Передан пустой текст для перевода.")
         return ""
     result = translator.translate_text(text=text_to_translate, target_lang=target_lang)
-    print("Оригинальный текст:", text_to_translate)
-    print("Переведенный текст:", result.text)
     return result.text
